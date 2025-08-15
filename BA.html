@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Business Analyst Entrance Test</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+  }
+  .intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+  }
+  input[type="text"] {
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    width: 250px;
+    text-align: center;
+  }
+  button {
+    background-color: #0ef;
+    color: #121212;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: 0.3s;
+  }
+  button:hover {
+    background-color: #00bcd4;
+  }
+  .question {
+    background-color: #1f1f1f;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+  }
+  .options label {
+    display: block;
+    margin: 8px 0;
+    padding: 8px;
+    background-color: #2b2b2b;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .options input {
+    margin-right: 10px;
+  }
+  #quizSection {
+    display: none;
+  }
+  .result {
+    text-align: center;
+    padding: 20px;
+    background-color: #1f1f1f;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="introScreen" class="intro">
+  <h1>Business Analyst Entrance Test</h1>
+  <input type="text" id="candidateName" placeholder="Enter your name" />
+  <button onclick="startQuiz()">Start Test</button>
+</div>
+
+<div id="quizSection" class="container"></div>
+
+<script>
+const GOOGLE_SHEETS_WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; // Replace with your actual Apps Script URL
+
+const questions = [
+    {q: "Which document defines functional requirements?", o: ["BRD", "FRD", "SRS", "UAT Plan"], a: 1},
+    {q: "What is a primary role of a Business Analyst?", o: ["Code development", "Requirements gathering", "Database design", "Server maintenance"], a: 1},
+    {q: "Which diagram shows system interactions?", o: ["Use Case", "Class Diagram", "Flowchart", "ER Diagram"], a: 0},
+    {q: "Which technique is used for requirement elicitation?", o: ["JAD sessions", "Unit Testing", "Debugging", "Deployment"], a: 0},
+    {q: "In Agile, a BA often acts as?", o: ["Product Owner", "Scrum Master", "Developer", "Tester"], a: 0},
+    {q: "What does UAT stand for?", o: ["User Acceptance Testing", "Unit Application Test", "Universal API Testing", "User Automated Test"], a: 0},
+    {q: "Which tool is commonly used for process modeling?", o: ["Excel", "BPMN", "Notepad", "Photoshop"], a: 1},
+    {q: "Which SQL clause is used to filter grouped data?", o: ["WHERE", "HAVING", "ORDER BY", "DISTINCT"], a: 1},
+    {q: "Which is NOT a BA responsibility?", o: ["Defining requirements", "Testing code logic", "Stakeholder communication", "Creating process flows"], a: 1},
+    {q: "What is a BRD?", o: ["Business Requirement Document", "Basic Resource Data", "Business Resource Directive", "Business Rule Design"], a: 0},
+    {q: "Which of these is a non-functional requirement?", o: ["System speed", "Login page", "User profile", "Search bar"], a: 0},
+    {q: "Which chart is used for timelines?", o: ["Bar Chart", "Pie Chart", "Gantt Chart", "Scatter Plot"], a: 2},
+    {q: "In SWOT analysis, 'O' stands for?", o: ["Opportunities", "Operations", "Objectives", "Obligations"], a: 0},
+    {q: "Which document details test scenarios?", o: ["FRD", "UAT Plan", "BRD", "Roadmap"], a: 1},
+    {q: "Which approach focuses on small, incremental changes?", o: ["Waterfall", "Agile", "Big Bang", "RAD"], a: 1},
+    {q: "A BA uses wireframes to?", o: ["Design database", "Visualize UI", "Write code", "Test performance"], a: 1},
+    {q: "Which is a data visualization tool?", o: ["Jira", "Power BI", "Eclipse", "Git"], a: 1},
+    {q: "In gap analysis, the 'gap' is?", o: ["Difference between current & desired state", "Space in database", "Network lag", "Time delay"], a: 0},
+    {q: "Which is a requirement prioritization technique?", o: ["MoSCoW", "FIFO", "LIFO", "CRUD"], a: 0},
+    {q: "Stakeholder analysis identifies?", o: ["Team members", "Project risks", "People affected by the project", "Data models"], a: 2}
+];
+
+let currentQuestionIndex = 0;
+let answers = JSON.parse(localStorage.getItem("answers")) || {};
+let candidateName = localStorage.getItem("candidateName") || "";
+
+function submitResultsToGoogleSheet(name, score) {
+    console.log("Submitting results:", name, score);
+    const dateTime = new Date().toLocaleString();
+
+    fetch(GOOGLE_SHEETS_WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name: name,
+            submissionDateTime: dateTime,
+            correctAnswers: score
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.result === "success") {
+            console.log("Data saved to Google Sheets.");
+        } else {
+            console.error("Google Sheets error:", data.error);
+        }
+    })
+    .catch(err => {
+        console.error("Error sending data:", err);
+    });
+}
+
+function startQuiz() {
+    candidateName = document.getElementById("candidateName").value.trim();
+    if (!candidateName) {
+        alert("Please enter your name before starting.");
+        return;
+    }
+    localStorage.setItem("candidateName", candidateName);
+    document.getElementById("introScreen").style.display = "none";
+    document.getElementById("quizSection").style.display = "block";
+    renderQuestion();
+}
+
+function renderQuestion() {
+    localStorage.setItem("currentQuestionIndex", currentQuestionIndex);
+    const quizDiv = document.getElementById("quizSection");
+
+    if (currentQuestionIndex >= questions.length) {
+        let score = Object.keys(answers).filter(i => answers[i] === questions[i].a).length;
+
+        quizDiv.innerHTML = `<div class="result">
+            <h2>Test Completed!</h2>
+            <p>Candidate: ${candidateName}</p>
+            <p>Your Score: ${score} / ${questions.length}</p>
+        </div>`;
+
+        submitResultsToGoogleSheet(candidateName, score);
+
+        localStorage.clear();
+        return;
+    }
+
+    let q = questions[currentQuestionIndex];
+    quizDiv.innerHTML = `
+        <h2>Question ${currentQuestionIndex + 1} of ${questions.length}</h2>
+        <div class="question">
+            <p>${q.q}</p>
+            <div class="options">
+                ${q.o.map((opt, idx) => `
+                    <label>
+                        <input type="radio" name="option" value="${idx}" ${answers[currentQuestionIndex] == idx ? "checked" : ""}>
+                        ${opt}
+                    </label>`).join('')}
+            </div>
+        </div>
+        <button onclick="nextQuestion()">Next</button>
+    `;
+}
+
+function nextQuestion() {
+    let selected = document.querySelector("input[name='option']:checked");
+    if (!selected) {
+        alert("Please select an answer.");
+        return;
+    }
+    answers[currentQuestionIndex] = parseInt(selected.value);
+    localStorage.setItem("answers", JSON.stringify(answers));
+    currentQuestionIndex++;
+    renderQuestion();
+}
+
+window.onload = function () {
+    let savedIndex = parseInt(localStorage.getItem("currentQuestionIndex"));
+    if (!isNaN(savedIndex)) currentQuestionIndex = savedIndex;
+    if (candidateName && !isNaN(currentQuestionIndex)) {
+        document.getElementById("introScreen").style.display = "none";
+        document.getElementById("quizSection").style.display = "block";
+        renderQuestion();
+    }
+};
+</script>
+
+
+</body>
+</html>
